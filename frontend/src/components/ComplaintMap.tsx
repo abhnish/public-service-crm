@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { LatLng, Icon, DivIcon } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { utilityAPI } from '../services/api';
 
 // Fix Leaflet default icon issue
 if (typeof window !== 'undefined') {

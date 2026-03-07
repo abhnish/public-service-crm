@@ -3,9 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import CopilotPanel from '../components/CopilotPanel';
 import PredictionsPanel from '../components/PredictionsPanel';
-import ComplaintMap from '../components/ComplaintMap';
 import ComplaintDetailModal from '../components/ComplaintDetailModal';
-import MapFilters from '../components/MapFilters';
 import TransparencyMap from '../components/TransparencyMap';
 import { useRealtimeEvents } from '../hooks/useRealtimeEvents';
 
@@ -32,10 +30,8 @@ const AdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'overview' | 'copilot'>('overview');
-  const [complaints, setComplaints] = useState<any[]>([]);
   const [selectedComplaint, setSelectedComplaint] = useState<any | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [filters, setFilters] = useState<any>({});
   
   // Initialize real-time events
   useRealtimeEvents();
@@ -51,7 +47,7 @@ const AdminDashboard = () => {
       // Fetch real complaints data
       const response = await api.get('/complaints');
       const fetchedComplaints = response.data.complaints;
-      setComplaints(fetchedComplaints);
+      
       
       // Fetch transparency data for the map
       const transparencyResponse = await api.get('/transparency');
@@ -98,10 +94,7 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleComplaintClick = (complaint: any) => {
-    setSelectedComplaint(complaint);
-    setIsModalOpen(true);
-  };
+  
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -380,7 +373,7 @@ const AdminDashboard = () => {
       {/* Complaint Detail Modal */}
       {isModalOpen && selectedComplaint && (
         <ComplaintDetailModal
-          complaint={selectedComplaint}
+          complaint={selectedComplaint} isOpen={isModalOpen}
           onClose={closeModal}
         />
       )}
