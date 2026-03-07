@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
+import { ThemeProvider } from './hooks/useTheme';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -16,11 +17,12 @@ function AppContent() {
   const location = useLocation();
 
   return (
-    <AuthProvider navigate={navigate} location={location}>
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <main>
-          <Routes>
+    <ThemeProvider>
+      <AuthProvider navigate={navigate} location={location}>
+        <div className="min-h-screen w-full bg-slate-950 text-slate-50 font-sans selection:bg-cyan-500/30 overflow-x-hidden flex flex-col transition-colors duration-300">
+          <Navbar />
+          <main className="flex-1 flex flex-col">
+            <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -68,6 +70,7 @@ function AppContent() {
         </main>
       </div>
     </AuthProvider>
+    </ThemeProvider>
   );
 }
 

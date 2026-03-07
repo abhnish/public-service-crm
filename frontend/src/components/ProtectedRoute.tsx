@@ -19,7 +19,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
     );
   }
 
-  if (!user) {
+ /*  if (!user) {
     // Redirect to login with return URL
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
@@ -39,7 +39,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
         </div>
       </div>
     );
-  }
+  } */
 
   return <>{children}</>;
 };

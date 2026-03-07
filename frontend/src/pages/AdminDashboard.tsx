@@ -59,105 +59,106 @@ const AdminDashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto mt-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+      <div className="max-w-7xl mx-auto mt-8 px-4 sm:px-6 lg:px-8">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto"></div>
+          <p className="mt-4 text-slate-400 font-medium tracking-wide">Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto mt-8">
-      <h2 className="text-3xl font-bold text-center mb-8">Admin Dashboard</h2>
+    <div className="max-w-7xl mx-auto mt-8 px-4 sm:px-6 lg:px-8 pb-12 font-sans selection:bg-cyan-500/30">
+      <h2 className="text-slate-50 text-3xl font-bold tracking-tight mb-8">Admin Dashboard</h2>
       
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+        <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg mb-6 text-sm font-medium">
           {error}
         </div>
       )}
       
       {/* KPI Cards */}
       {kpiData && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-blue-600">Total Complaints</h3>
-            <p className="text-3xl font-bold mt-2">{kpiData.totalComplaints}</p>
-            <p className="text-sm text-gray-500 mt-1">All time</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-slate-900/50 border border-slate-700/50 p-6 rounded-2xl hover:bg-slate-800/80 hover:border-cyan-500/40 transition-all duration-300 group">
+            <h3 className="text-cyan-400 text-sm uppercase tracking-wider font-semibold">Total Complaints</h3>
+            <p className="text-slate-50 text-4xl font-bold mt-3 group-hover:drop-shadow-[0_0_8px_rgba(34,211,238,0.3)] transition-all">{kpiData.totalComplaints}</p>
+            <p className="text-slate-400 text-sm mt-1">All time</p>
           </div>
           
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-green-600">Resolved Ratio</h3>
-            <p className="text-3xl font-bold mt-2">{(kpiData.resolvedRatio * 100).toFixed(1)}%</p>
-            <p className="text-sm text-gray-500 mt-1">Resolution rate</p>
+          <div className="bg-slate-900/50 border border-slate-700/50 p-6 rounded-2xl hover:bg-slate-800/80 hover:border-cyan-500/40 transition-all duration-300 group">
+            <h3 className="text-emerald-400 text-sm uppercase tracking-wider font-semibold">Resolved Ratio</h3>
+            <p className="text-slate-50 text-4xl font-bold mt-3 group-hover:drop-shadow-[0_0_8px_rgba(52,211,153,0.3)] transition-all">{(kpiData.resolvedRatio * 100).toFixed(1)}%</p>
+            <p className="text-slate-400 text-sm mt-1">Resolution rate</p>
           </div>
           
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-yellow-600">Unresolved</h3>
-            <p className="text-3xl font-bold mt-2">{Math.round(kpiData.totalComplaints * (1 - kpiData.resolvedRatio))}</p>
-            <p className="text-sm text-gray-500 mt-1">Pending action</p>
+          <div className="bg-slate-900/50 border border-slate-700/50 p-6 rounded-2xl hover:bg-slate-800/80 hover:border-cyan-500/40 transition-all duration-300 group">
+            <h3 className="text-rose-400 text-sm uppercase tracking-wider font-semibold">Unresolved</h3>
+            <p className="text-slate-50 text-4xl font-bold mt-3 group-hover:drop-shadow-[0_0_8px_rgba(251,113,133,0.3)] transition-all">{Math.round(kpiData.totalComplaints * (1 - kpiData.resolvedRatio))}</p>
+            <p className="text-slate-400 text-sm mt-1">Pending action</p>
           </div>
           
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-purple-600">Avg Resolution</h3>
-            <p className="text-3xl font-bold mt-2">
+          <div className="bg-slate-900/50 border border-slate-700/50 p-6 rounded-2xl hover:bg-slate-800/80 hover:border-cyan-500/40 transition-all duration-300 group">
+            <h3 className="text-indigo-400 text-sm uppercase tracking-wider font-semibold">Avg Resolution</h3>
+            <p className="text-slate-50 text-4xl font-bold mt-3 group-hover:drop-shadow-[0_0_8px_rgba(129,140,248,0.3)] transition-all">
               {heatmapData.length > 0 
                 ? (heatmapData.reduce((sum, ward) => sum + ward.avgResolutionTime, 0) / heatmapData.length).toFixed(1)
                 : '0'
               }h
             </p>
-            <p className="text-sm text-gray-500 mt-1">Hours</p>
+            <p className="text-slate-400 text-sm mt-1">Hours</p>
           </div>
         </div>
       )}
 
       {/* Heatmap Section */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h3 className="text-xl font-semibold mb-4">Complaint Heatmap by Ward</h3>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Map Placeholder - Replace with actual Leaflet map */}
-          <div className="bg-gray-100 rounded-lg h-96 flex items-center justify-center">
+      <div className="bg-slate-900/40 border border-slate-800 p-8 rounded-3xl mb-8 backdrop-blur-sm">
+        <h3 className="text-slate-50 text-xl font-bold mb-6">Complaint Heatmap by Ward</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Map Placeholder */}
+          <div className="bg-slate-950 border-2 border-dashed border-slate-800 rounded-xl h-96 flex items-center justify-center">
             <div className="text-center">
-              <div className="text-6xl mb-4">🗺️</div>
-              <p className="text-gray-600">Interactive Map</p>
-              <p className="text-sm text-gray-500">Leaflet heatmap will be rendered here</p>
+              <div className="text-6xl mb-4 opacity-50 grayscale">🗺️</div>
+              <p className="text-slate-400 font-medium">Interactive Map Data</p>
+              <p className="text-sm text-slate-500 mt-1">GIS visualization pending initialization</p>
             </div>
           </div>
           
           {/* Ward Statistics */}
           <div className="space-y-4">
-            <h4 className="font-semibold text-gray-700">Ward Statistics</h4>
+            <h4 className="font-semibold text-slate-300 uppercase tracking-wider text-sm mb-4">Ward Statistics</h4>
             {heatmapData.map((ward) => (
-              <div key={ward.wardId} className="border rounded-lg p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <h5 className="font-medium">{ward.wardName}</h5>
-                  <span className="text-sm text-gray-500">Ward {ward.wardId}</span>
+              <div key={ward.wardId} className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-5 hover:border-slate-600 transition-colors">
+                <div className="flex justify-between items-center mb-3">
+                  <h5 className="font-bold text-slate-50">{ward.wardName}</h5>
+                  <span className="text-xs font-semibold px-2 py-1 bg-slate-800 text-slate-400 rounded-md border border-slate-700">Ward {ward.wardId}</span>
                 </div>
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-500">Total</p>
-                    <p className="font-semibold">{ward.totalComplaints}</p>
+                <div className="grid grid-cols-3 gap-4 text-sm mb-4">
+                  <div className="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800">
+                    <p className="text-slate-500 text-xs uppercase tracking-wider mb-1">Total</p>
+                    <p className="font-bold text-slate-200">{ward.totalComplaints}</p>
                   </div>
-                  <div>
-                    <p className="text-gray-500">Unresolved</p>
-                    <p className="font-semibold text-red-600">{ward.unresolvedComplaints}</p>
+                  <div className="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800">
+                    <p className="text-slate-500 text-xs uppercase tracking-wider mb-1">Unresolved</p>
+                    <p className="font-bold text-rose-400">{ward.unresolvedComplaints}</p>
                   </div>
-                  <div>
-                    <p className="text-gray-500">Avg Time</p>
-                    <p className="font-semibold">{ward.avgResolutionTime}h</p>
+                  <div className="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800">
+                    <p className="text-slate-500 text-xs uppercase tracking-wider mb-1">Avg Time</p>
+                    <p className="font-bold text-slate-200">{ward.avgResolutionTime}h</p>
                   </div>
                 </div>
-                <div className="mt-2">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                <div>
+                  <div className="flex justify-between text-xs mb-1.5">
+                    <span className="text-slate-400 font-medium">Resolution Progress</span>
+                    <span className="text-cyan-400 font-bold">{((ward.totalComplaints - ward.unresolvedComplaints) / ward.totalComplaints * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
                     <div 
-                      className="bg-blue-600 h-2 rounded-full" 
+                      className="bg-cyan-500 h-1.5 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.5)]" 
                       style={{ width: `${((ward.totalComplaints - ward.unresolvedComplaints) / ward.totalComplaints) * 100}%` }}
                     ></div>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {((ward.totalComplaints - ward.unresolvedComplaints) / ward.totalComplaints * 100).toFixed(1)}% resolved
-                  </p>
                 </div>
               </div>
             ))}
@@ -167,15 +168,17 @@ const AdminDashboard = () => {
 
       {/* Top Departments */}
       {kpiData && (
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-xl font-semibold mb-4">Top Departments by Complaint Volume</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-slate-900/40 border border-slate-800 p-8 rounded-3xl backdrop-blur-sm">
+          <h3 className="text-slate-50 text-xl font-bold mb-6">Top Departments by Volume</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {kpiData.topDepartments.map((dept, index) => (
-              <div key={dept.name} className="text-center p-4 border rounded-lg">
-                <div className="text-2xl font-bold text-blue-600 mb-2">#{index + 1}</div>
-                <h4 className="font-semibold">{dept.name}</h4>
-                <p className="text-2xl font-bold mt-2">{dept.count}</p>
-                <p className="text-sm text-gray-500">complaints</p>
+              <div key={dept.name} className="bg-slate-900 border border-slate-700 hover:border-cyan-500/50 hover:bg-slate-800/80 p-6 rounded-xl flex flex-col items-center justify-center transition-all duration-300 group">
+                <div className="text-4xl font-black text-cyan-500 drop-shadow-[0_0_8px_rgba(6,182,212,0.5)] mb-3 group-hover:scale-110 transition-transform">#{index + 1}</div>
+                <h4 className="font-bold text-slate-50 text-center mb-1">{dept.name}</h4>
+                <div className="flex items-baseline gap-1.5 mt-2">
+                  <p className="text-2xl font-bold text-slate-200">{dept.count}</p>
+                  <p className="text-xs text-slate-500 uppercase font-semibold">cases</p>
+                </div>
               </div>
             ))}
           </div>
