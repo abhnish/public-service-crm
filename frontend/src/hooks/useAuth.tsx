@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { authAPI } from '../services/api';
 import { User } from '../services/api';
+import { socketClient } from '../services/socketClient';
 
 interface AuthContextType {
   user: User | null;
@@ -45,8 +46,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, navigate, 
     if (storedToken && storedUser) {
       setToken(storedToken);
       setUser(JSON.parse(storedUser));
+      
+      // Connect to Socket.IO when token is available
+      socketClient.connect(storedToken).catch(error => {
+        console.error('Socket connection failed:', error);
+      });
     }
     setIsLoading(false);
+
+    // Cleanup on unmount
+    return () => {
+      socketClient.disconnect();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -59,6 +70,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, navigate, 
       
       localStorage.setItem('authToken', newToken);
       localStorage.setItem('user', JSON.stringify(newUser));
+      
+      // Connect to Socket.IO after login
+      socketClient.connect(newToken).catch(error => {
+        console.error('Socket connection failed:', error);
+      });
       
       // Redirect to the page they were trying to access, or default to dashboard
       const from = location.state?.from?.pathname || '/dashboard';
@@ -85,6 +101,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, navigate, 
       localStorage.setItem('authToken', newToken);
       localStorage.setItem('user', JSON.stringify(newUser));
       
+      // Connect to Socket.IO after registration
+      socketClient.connect(newToken).catch(error => {
+        console.error('Socket connection failed:', error);
+      });
+      
       navigate('/dashboard');
     } catch (error) {
       throw error;
@@ -96,6 +117,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, navigate, 
     setToken(null);
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
+    
+    // Disconnect from Socket.IO
+    socketClient.disconnect();
+    
     navigate('/login');
   };
 

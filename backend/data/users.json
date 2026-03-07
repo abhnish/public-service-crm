@@ -1,0 +1,79 @@
+[
+  {
+    "id": 1,
+    "fullName": "Test User",
+    "email": "test@example.com",
+    "role": "citizen",
+    "phone": "1234567890"
+  },
+  {
+    "id": 2,
+    "fullName": "Admin User",
+    "email": "admin@civiccrm.gov",
+    "role": "admin",
+    "phone": "1111111111",
+    "password": "$2a$10$Sh06K/zfmgOYap6OOD65UuVkmpuuIZF/KUa1S5i0bjanRl1oPdf.O"
+  },
+  {
+    "id": 3,
+    "fullName": "Officer User",
+    "email": "officer@civiccrm.gov",
+    "role": "officer",
+    "phone": "2222222222",
+    "password": "$2a$10$Sh06K/zfmgOYap6OOD65UuVkmpuuIZF/KUa1S5i0bjanRl1oPdf.O"
+  },
+  {
+    "id": 4,
+    "fullName": "Test Persistent",
+    "email": "persistent@test.com",
+    "phone": "9999999999",
+    "password": "$2a$10$Sh06K/zfmgOYap6OOD65UuVkmpuuIZF/KUa1S5i0bjanRl1oPdf.O",
+    "role": "citizen",
+    "createdAt": "2026-03-07T02:34:13.329Z"
+  },
+  {
+    "id": 5,
+    "fullName": "abhnish",
+    "email": "abhnish.1122@gmail.com",
+    "phone": "1234567891",
+    "password": "$2a$10$D2J1kxVdQH9JHG.Hh7L3d.2C04MuWFXg95pLiL2dLZkdcogzFRdzy",
+    "role": "citizen",
+    "createdAt": "2026-03-07T02:36:47.086Z"
+  },
+  {
+    "id": 6,
+    "fullName": "milan",
+    "email": "milan@test.com",
+    "phone": "1234891392",
+    "password": "$2a$10$CLxrKLQYUS6pcb1xju88Y.GjMHw3wTQuskS8xnqn6055vEfgD1b5i",
+    "role": "officer",
+    "createdAt": "2026-03-07T02:38:06.955Z"
+  },
+  {
+    "id": 7,
+    "fullName": "chinmay",
+    "email": "chinmay@test.com",
+    "phone": "090897563",
+    "password": "$2a$10$D8xg4i57PUwn1obAOsKJte3XSttmMO.CR3GKdEA.U8WQjRosoxmhy",
+    "role": "admin",
+    "createdAt": "2026-03-07T02:40:22.972Z"
+  },
+  {
+    "id": 8,
+    "fullName": "test",
+    "email": "test@com",
+    "phone": "12432123432",
+    "password": "$2a$10$EGpFnsqZodWiK.EtmYDKoetS4wY3ORrHCIAQ9Sa1nsU3CIuGrKZym",
+    "role": "admin",
+    "createdAt": "2026-03-07T03:23:11.193Z"
+  },
+  {
+    "id": 9,
+    "fullName": "Test Admin",
+    "email": "testadmin@civiccrm.gov",
+    "phone": "9999999999",
+    "password": "admin123",
+    "role": "admin",
+    "createdAt": "2026-03-07T03:30:00.000Z"
+  }
+]

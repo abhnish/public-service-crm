@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { complaintsAPI, utilityAPI } from '../services/api';
 import { Ward, Department } from '../services/api';
+import { offlineDraftService } from '../services/offlineDraftService';
+import { offlineSyncService } from '../services/offlineSyncService';
 
 const SubmitComplaint = () => {
   const navigate = useNavigate();
@@ -17,8 +19,12 @@ const SubmitComplaint = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [lastSaved, setLastSaved] = useState<string | null>(null);
+  const [isDrafting, setIsDrafting] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     // Fetch wards and departments on component mount
     const fetchData = async () => {
       try {
@@ -30,22 +36,74 @@ const SubmitComplaint = () => {
         setDepartments(departmentsResponse.data);
       } catch (err) {
         console.error('Error fetching data:', err);
-        // Use mock data if API fails
-        setWards([
-          { id: 1, name: 'Ward 1', geojson: {} },
-          { id: 2, name: 'Ward 2', geojson: {} },
-          { id: 3, name: 'Ward 3', geojson: {} }
-        ]);
-        setDepartments([
-          { id: 1, name: 'Water', slaHours: 24 },
-          { id: 2, name: 'Roads', slaHours: 48 },
-          { id: 3, name: 'Sanitation', slaHours: 12 }
-        ]);
+        setError('Failed to load wards and departments. Please refresh the page.');
+      }
+    };
+
+    // Load any existing draft
+    const loadDraft = async () => {
+      try {
+        const drafts = await offlineDraftService.getAllDrafts();
+        if (drafts.length > 0) {
+          const latestDraft = drafts[0]; // Get the most recent draft
+          setDescription(latestDraft.description);
+          setWardId(latestDraft.wardId?.toString() || '');
+          setDepartmentId(latestDraft.departmentId?.toString() || '');
+          setLocation(latestDraft.location);
+          setDraftId(latestDraft.id || null);
+          setLastSaved(latestDraft.updatedAt);
+        }
+      } catch (err) {
+        console.error('Error loading draft:', err);
       }
     };
 
     fetchData();
+    loadDraft();
+
+    // Monitor online status
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
+
+  // Auto-save draft every 10 seconds
+  useEffect(() => {
+    if (!description.trim() && !wardId) return;
+
+    const saveDraft = async () => {
+      try {
+        setIsDrafting(true);
+        const draftData = {
+          description: description.trim(),
+          location: location.trim(),
+          category: 'General', // Default category
+          priorityScore: 0.5, // Default priority
+          wardId: wardId ? parseInt(wardId) : undefined,
+          departmentId: departmentId ? parseInt(departmentId) : undefined,
+        };
+
+        const id = await offlineDraftService.saveDraft(draftData);
+        setDraftId(id);
+        setLastSaved(new Date().toISOString());
+        console.log('Draft auto-saved:', id);
+      } catch (err) {
+        console.error('Error auto-saving draft:', err);
+      } finally {
+        setIsDrafting(false);
+      }
+    };
+
+    const interval = setInterval(saveDraft, 10000);
+    return () => clearInterval(interval);
+  }, [description, wardId, departmentId, location]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,30 +135,99 @@ const SubmitComplaint = () => {
         attachment: attachment || undefined
       };
 
-      const response = await complaintsAPI.create(complaintData);
-      const { priorityScore } = response.data;
+      if (isOnline) {
+        // Try to submit immediately if online
+        const response = await complaintsAPI.create(complaintData);
+        const { priorityScore } = response.data;
 
-      setSuccess(`Complaint submitted successfully! Priority Score: ${priorityScore}`);
-      
-      // Reset form
-      setDescription('');
-      setWardId('');
-      setDepartmentId('');
-      setLocation('');
-      setLatitude('');
-      setLongitude('');
-      setAttachment(null);
+        setSuccess(`Complaint submitted successfully! Priority Score: ${priorityScore}`);
+        
+        // Clear draft after successful submission
+        if (draftId) {
+          await offlineDraftService.deleteDraft(draftId);
+        }
+        
+        // Reset form
+        resetForm();
 
-      // Redirect to complaints list after 2 seconds
-      setTimeout(() => {
-        navigate('/my-complaints');
-      }, 2000);
+        // Redirect to complaints list after 2 seconds
+        setTimeout(() => {
+          navigate('/my-complaints');
+        }, 2000);
+      } else {
+        // Save to outbox if offline
+        await offlineSyncService.saveComplaintOffline({
+          description: complaintData.description,
+          location: complaintData.location,
+          category: 'General',
+          priorityScore: 0.5,
+          wardId: complaintData.wardId,
+          departmentId: complaintData.departmentId,
+        });
+
+        setSuccess('Complaint saved locally. It will be uploaded when you\'re back online.');
+        
+        // Clear draft after saving to outbox
+        if (draftId) {
+          await offlineDraftService.deleteDraft(draftId);
+        }
+        
+        // Reset form
+        resetForm();
+
+        // Redirect to complaints list after 2 seconds
+        setTimeout(() => {
+          navigate('/my-complaints');
+        }, 2000);
+      }
 
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to submit complaint. Please try again.');
+      // If online submission fails, save to outbox
+      if (navigator.onLine) {
+        try {
+          await offlineSyncService.saveComplaintOffline({
+            description: description.trim(),
+            location: location.trim(),
+            category: 'General',
+            priorityScore: 0.5,
+            wardId: parseInt(wardId),
+            departmentId: departmentId ? parseInt(departmentId) : undefined,
+          });
+
+          setSuccess('Complaint saved locally due to network issues. It will be uploaded automatically.');
+          
+          // Clear draft after saving to outbox
+          if (draftId) {
+            await offlineDraftService.deleteDraft(draftId);
+          }
+          
+          // Reset form
+          resetForm();
+
+          setTimeout(() => {
+            navigate('/my-complaints');
+          }, 2000);
+        } catch (offlineErr) {
+          setError('Failed to submit complaint both online and offline. Please try again.');
+        }
+      } else {
+        setError(err.response?.data?.error || 'Failed to submit complaint. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const resetForm = () => {
+    setDescription('');
+    setWardId('');
+    setDepartmentId('');
+    setLocation('');
+    setLatitude('');
+    setLongitude('');
+    setAttachment(null);
+    setDraftId(null);
+    setLastSaved(null);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,6 +240,36 @@ const SubmitComplaint = () => {
   return (
     <div className="max-w-2xl mx-auto mt-8 bg-white p-8 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold text-center mb-6">Submit Complaint</h2>
+      
+      {/* Draft Status Indicator */}
+      {(draftId || isDrafting) && (
+        <div className={`mb-4 p-3 rounded-lg text-sm ${
+          isDrafting ? 'bg-blue-50 text-blue-700' : 'bg-green-50 text-green-700'
+        }`}>
+          <div className="flex items-center space-x-2">
+            {isDrafting && (
+              <svg className="animate-spin w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            )}
+            <span>
+              {isDrafting ? 'Saving draft...' : 'Draft saved locally'}
+            </span>
+          </div>
+          {lastSaved && !isDrafting && (
+            <div className="text-xs mt-1 opacity-75">
+              Last saved: {new Date(lastSaved).toLocaleString()}
+            </div>
+          )}
+        </div>
+      )}
+      
+      {/* Online Status */}
+      <div className={`mb-4 p-2 rounded text-sm text-center ${
+        isOnline ? 'bg-green-50 text-green-700' : 'bg-orange-50 text-orange-700'
+      }`}>
+        {isOnline ? '🟢 Online - Changes will be saved immediately' : '🟠 Offline - Changes saved locally'}
+      </div>
       
       {success && (
         <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded mb-6">

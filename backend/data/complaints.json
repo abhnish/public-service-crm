@@ -1,0 +1,24 @@
+{
+  "complaints": [
+    {
+      "id": 1,
+      "citizenId": 5,
+      "wardId": 2,
+      "departmentId": 1,
+      "description": "no water supply",
+      "location": null,
+      "latitude": null,
+      "longitude": null,
+      "category": "Water Supply",
+      "sentiment": "neutral",
+      "priorityScore": 0.3,
+      "status": "submitted",
+      "assignedOfficer": null,
+      "attachments": null,
+      "createdAt": "2026-03-07T04:46:02.022Z",
+      "assignedAt": null,
+      "resolvedAt": null
+    }
+  ],
+  "nextId": 2
+}

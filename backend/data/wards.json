@@ -1,0 +1,57 @@
+[
+  {
+    "id": 1,
+    "name": "Central Ward",
+    "area": "Downtown District",
+    "population": 50000,
+    "coordinates": {
+      "lat": 28.6139,
+      "lng": 77.2090,
+      "bounds": [[28.6039, 77.1990], [28.6239, 77.2190]]
+    }
+  },
+  {
+    "id": 2,
+    "name": "North Ward",
+    "area": "Northern District",
+    "population": 45000,
+    "coordinates": {
+      "lat": 28.6239,
+      "lng": 77.2090,
+      "bounds": [[28.6139, 77.1990], [28.6339, 77.2190]]
+    }
+  },
+  {
+    "id": 3,
+    "name": "South Ward",
+    "area": "Southern District",
+    "population": 38000,
+    "coordinates": {
+      "lat": 28.6039,
+      "lng": 77.2190,
+      "bounds": [[28.5939, 77.2090], [28.6139, 77.2290]]
+    }
+  },
+  {
+    "id": 4,
+    "name": "East Ward",
+    "area": "Eastern District",
+    "population": 42000,
+    "coordinates": {
+      "lat": 28.6139,
+      "lng": 77.2290,
+      "bounds": [[28.6039, 77.2190], [28.6239, 77.2390]]
+    }
+  },
+  {
+    "id": 5,
+    "name": "West Ward",
+    "area": "Western District",
+    "population": 35000,
+    "coordinates": {
+      "lat": 28.6139,
+      "lng": 77.1990,
+      "bounds": [[28.6039, 77.1890], [28.6239, 77.2090]]
+    }
+  }
+]

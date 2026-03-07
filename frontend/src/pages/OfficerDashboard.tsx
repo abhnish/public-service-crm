@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { Complaint } from '../services/api';
+import api, { complaintsAPI } from '../services/api';
+import { useRealtimeEvents } from '../hooks/useRealtimeEvents';
 
 const OfficerDashboard = () => {
   const { user } = useAuth();
@@ -8,68 +10,57 @@ const OfficerDashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  
+  // Initialize real-time events
+  useRealtimeEvents();
 
   useEffect(() => {
     fetchAssignedComplaints();
   }, []);
 
+  // Listen for real-time complaint updates
+  useEffect(() => {
+    const handleComplaintAssigned = (event: CustomEvent) => {
+      const { complaint } = event.detail;
+      if (complaint.assignedOfficer === user?.id) {
+        setAssignedComplaints(prev => {
+          const exists = prev.some(c => c.id === complaint.id);
+          if (!exists) {
+            return [complaint, ...prev].sort((a, b) => b.priorityScore - a.priorityScore);
+          }
+          return prev;
+        });
+      }
+    };
+
+    const handleComplaintStatusUpdated = (event: CustomEvent) => {
+      const { complaint } = event.detail;
+      setAssignedComplaints(prev => 
+        prev.map(c => c.id === complaint.id ? complaint : c)
+          .sort((a, b) => b.priorityScore - a.priorityScore)
+      );
+    };
+
+    window.addEventListener('complaint:assigned', handleComplaintAssigned as EventListener);
+    window.addEventListener('complaint:status_updated', handleComplaintStatusUpdated as EventListener);
+
+    return () => {
+      window.removeEventListener('complaint:assigned', handleComplaintAssigned as EventListener);
+      window.removeEventListener('complaint:status_updated', handleComplaintStatusUpdated as EventListener);
+    };
+  }, [user?.id]);
+
   const fetchAssignedComplaints = async () => {
     try {
       setIsLoading(true);
-      // Mock data - replace with actual API call when available
-      const mockComplaints: Complaint[] = [
-        {
-          id: 1,
-          category: 'Water Supply',
-          description: 'Low water pressure affecting 50+ households in Sector 12',
-          status: 'in_progress',
-          priorityScore: 0.9,
-          sentiment: 'neutral',
-          createdAt: '2024-03-15T10:30:00Z',
-          assignedAt: '2024-03-15T11:00:00Z',
-          location: 'Sector 12, Residential Area',
-          wardId: 1,
-          departmentId: 1,
-          assignedOfficer: user?.id,
-          citizenId: 1
-        },
-        {
-          id: 2,
-          category: 'Street Light',
-          description: 'Multiple lights not working on Main Road causing safety concerns',
-          status: 'submitted',
-          priorityScore: 0.7,
-          sentiment: 'angry',
-          createdAt: '2024-03-14T09:15:00Z',
-          assignedAt: '2024-03-14T10:30:00Z',
-          location: 'Main Road, Commercial Area',
-          wardId: 2,
-          departmentId: 2,
-          assignedOfficer: user?.id,
-          citizenId: 2
-        },
-        {
-          id: 3,
-          category: 'Sanitation',
-          description: 'Garbage collection delayed for past 3 days in residential complex',
-          status: 'in_progress',
-          priorityScore: 0.8,
-          sentiment: 'angry',
-          createdAt: '2024-03-13T14:20:00Z',
-          assignedAt: '2024-03-13T15:00:00Z',
-          location: 'Green Valley Apartments',
-          wardId: 3,
-          departmentId: 3,
-          assignedOfficer: user?.id,
-          citizenId: 3
-        }
-      ];
-
+      const response = await api.get('/complaints');
+      const complaints: Complaint[] = response.data.complaints;
       // Sort by priorityScore descending
-      const sortedComplaints = mockComplaints.sort((a, b) => b.priorityScore - a.priorityScore);
+      const sortedComplaints = complaints.sort((a, b) => b.priorityScore - a.priorityScore);
       setAssignedComplaints(sortedComplaints);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to fetch assigned complaints');
+    } catch (err) {
+      console.error('Error fetching complaints:', err);
+      setError('Failed to load complaints');
     } finally {
       setIsLoading(false);
     }
@@ -79,8 +70,8 @@ const OfficerDashboard = () => {
     try {
       setUpdatingId(complaintId);
       
-      // Mock API call - replace with actual API call when available
-      // await complaintsAPI.update(complaintId, { status: newStatus });
+      // Real API call
+      await complaintsAPI.update(complaintId, { status: newStatus });
       
       // Update local state
       setAssignedComplaints(prev => 

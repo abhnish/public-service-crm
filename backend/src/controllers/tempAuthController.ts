@@ -1,9 +1,29 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import fs from 'fs';
+import path from 'path';
 
-// Temporary mock database for testing
-const users: any[] = [];
+// Use the same persistent storage as complaintController
+const USERS_FILE = path.join(__dirname, '../../data/users.json');
+
+// Load users from file
+let users: any[] = [];
+try {
+  if (fs.existsSync(USERS_FILE)) {
+    users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+  }
+} catch (error) {
+  console.log('Starting with empty users array in tempAuth');
+}
+
+const saveUsers = () => {
+  try {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+  } catch (error) {
+    console.error('Error saving users:', error);
+  }
+};
 
 export const tempRegister = async (req: Request, res: Response) => {
   try {
@@ -42,6 +62,7 @@ export const tempRegister = async (req: Request, res: Response) => {
     };
 
     users.push(user);
+    saveUsers(); // Save to file
 
     // Generate JWT token
     const token = jwt.sign(
@@ -85,8 +106,16 @@ export const tempLogin = async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Invalid credentials.' });
     }
 
-    // Verify password
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    // Verify password - handle both bcrypt and plain text for testing
+    let isValidPassword = false;
+    if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$')) {
+      // Hashed password - use bcrypt
+      isValidPassword = await bcrypt.compare(password, user.password);
+    } else {
+      // Plain text password - direct comparison
+      isValidPassword = password === user.password;
+    }
+    
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials.' });
     }

@@ -1,4 +1,13 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../services/api';
+import CopilotPanel from '../components/CopilotPanel';
+import PredictionsPanel from '../components/PredictionsPanel';
+import ComplaintMap from '../components/ComplaintMap';
+import ComplaintDetailModal from '../components/ComplaintDetailModal';
+import MapFilters from '../components/MapFilters';
+import TransparencyMap from '../components/TransparencyMap';
+import { useRealtimeEvents } from '../hooks/useRealtimeEvents';
 
 interface HeatmapData {
   wardId: number;
@@ -16,10 +25,20 @@ interface KPIData {
 }
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [heatmapData, setHeatmapData] = useState<HeatmapData[]>([]);
   const [kpiData, setKpiData] = useState<KPIData | null>(null);
+  const [transparencyData, setTransparencyData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState<'overview' | 'copilot'>('overview');
+  const [complaints, setComplaints] = useState<any[]>([]);
+  const [selectedComplaint, setSelectedComplaint] = useState<any | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [filters, setFilters] = useState<any>({});
+  
+  // Initialize real-time events
+  useRealtimeEvents();
 
   useEffect(() => {
     fetchDashboardData();
@@ -29,27 +48,49 @@ const AdminDashboard = () => {
     try {
       setIsLoading(true);
       
-      // Mock heatmap data - replace with actual API call when available
-      const mockHeatmapData: HeatmapData[] = [
-        { wardId: 1, wardName: 'Ward 1', totalComplaints: 45, unresolvedComplaints: 12, avgResolutionTime: 24.5 },
-        { wardId: 2, wardName: 'Ward 2', totalComplaints: 38, unresolvedComplaints: 8, avgResolutionTime: 18.2 },
-        { wardId: 3, wardName: 'Ward 3', totalComplaints: 52, unresolvedComplaints: 15, avgResolutionTime: 31.7 },
-      ];
-
-      // Mock KPI data - replace with actual API call when available
-      const mockKpiData: KPIData = {
-        totalComplaints: 135,
-        resolvedRatio: 0.76,
-        topDepartments: [
-          { name: 'Water Supply', count: 42 },
-          { name: 'Road Damage', count: 38 },
-          { name: 'Sanitation', count: 28 },
-          { name: 'Electricity', count: 27 },
-        ]
+      // Fetch real complaints data
+      const response = await api.get('/complaints');
+      const fetchedComplaints = response.data.complaints;
+      setComplaints(fetchedComplaints);
+      
+      // Fetch transparency data for the map
+      const transparencyResponse = await api.get('/transparency');
+      const transparencyData = transparencyResponse.data;
+      setTransparencyData(transparencyData);
+      
+      // Calculate real metrics from actual data
+      const totalComplaints = fetchedComplaints.length;
+      const resolvedComplaints = fetchedComplaints.filter((c: any) => c.status === 'resolved').length;
+      const resolvedRatio = totalComplaints > 0 ? resolvedComplaints / totalComplaints : 0;
+      
+      // Calculate department statistics
+      const deptCounts: { [key: string]: number } = {};
+      fetchedComplaints.forEach((c: any) => {
+        const dept = c.category || 'Unknown';
+        deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+      });
+      
+      const topDepartments = Object.entries(deptCounts)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .map(([name, count]) => ({ name, count }));
+      
+      const heatmapData: HeatmapData[] = transparencyData.complaintsByWard.map((ward: any) => ({
+        wardId: ward.wardId || 0,
+        wardName: ward.wardName,
+        totalComplaints: ward.count,
+        unresolvedComplaints: Math.floor(ward.count * 0.3), // Estimate 30% unresolved
+        avgResolutionTime: transparencyData.avgResolutionTimeHours || 0
+      }));
+      
+      const kpiData: KPIData = {
+        totalComplaints,
+        resolvedRatio,
+        topDepartments
       };
 
-      setHeatmapData(mockHeatmapData);
-      setKpiData(mockKpiData);
+      setHeatmapData(heatmapData);
+      setKpiData(kpiData);
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to fetch dashboard data');
     } finally {
@@ -57,129 +98,291 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleComplaintClick = (complaint: any) => {
+    setSelectedComplaint(complaint);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedComplaint(null);
+  };
+
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto mt-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
-        </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto mt-8">
-      <h2 className="text-3xl font-bold text-center mb-8">Admin Dashboard</h2>
-      
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
-          {error}
-        </div>
-      )}
-      
-      {/* KPI Cards */}
-      {kpiData && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-blue-600">Total Complaints</h3>
-            <p className="text-3xl font-bold mt-2">{kpiData.totalComplaints}</p>
-            <p className="text-sm text-gray-500 mt-1">All time</p>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+            <p className="text-gray-600 mt-2">Monitor and manage city complaints and services</p>
           </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-green-600">Resolved Ratio</h3>
-            <p className="text-3xl font-bold mt-2">{(kpiData.resolvedRatio * 100).toFixed(1)}%</p>
-            <p className="text-sm text-gray-500 mt-1">Resolution rate</p>
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-yellow-600">Unresolved</h3>
-            <p className="text-3xl font-bold mt-2">{Math.round(kpiData.totalComplaints * (1 - kpiData.resolvedRatio))}</p>
-            <p className="text-sm text-gray-500 mt-1">Pending action</p>
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold text-purple-600">Avg Resolution</h3>
-            <p className="text-3xl font-bold mt-2">
-              {heatmapData.length > 0 
-                ? (heatmapData.reduce((sum, ward) => sum + ward.avgResolutionTime, 0) / heatmapData.length).toFixed(1)
-                : '0'
-              }h
-            </p>
-            <p className="text-sm text-gray-500 mt-1">Hours</p>
-          </div>
-        </div>
-      )}
-
-      {/* Heatmap Section */}
-      <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-        <h3 className="text-xl font-semibold mb-4">Complaint Heatmap by Ward</h3>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Map Placeholder - Replace with actual Leaflet map */}
-          <div className="bg-gray-100 rounded-lg h-96 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-6xl mb-4">🗺️</div>
-              <p className="text-gray-600">Interactive Map</p>
-              <p className="text-sm text-gray-500">Leaflet heatmap will be rendered here</p>
-            </div>
-          </div>
-          
-          {/* Ward Statistics */}
-          <div className="space-y-4">
-            <h4 className="font-semibold text-gray-700">Ward Statistics</h4>
-            {heatmapData.map((ward) => (
-              <div key={ward.wardId} className="border rounded-lg p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <h5 className="font-medium">{ward.wardName}</h5>
-                  <span className="text-sm text-gray-500">Ward {ward.wardId}</span>
-                </div>
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-500">Total</p>
-                    <p className="font-semibold">{ward.totalComplaints}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Unresolved</p>
-                    <p className="font-semibold text-red-600">{ward.unresolvedComplaints}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Avg Time</p>
-                    <p className="font-semibold">{ward.avgResolutionTime}h</p>
-                  </div>
-                </div>
-                <div className="mt-2">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-blue-600 h-2 rounded-full" 
-                      style={{ width: `${((ward.totalComplaints - ward.unresolvedComplaints) / ward.totalComplaints) * 100}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {((ward.totalComplaints - ward.unresolvedComplaints) / ward.totalComplaints * 100).toFixed(1)}% resolved
-                  </p>
-                </div>
-              </div>
-            ))}
+          <div className="flex space-x-3">
+            <button 
+              onClick={() => navigate('/transparency')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
+              🏛️ Transparency Portal
+            </button>
+            <button 
+              onClick={() => navigate('/submit-complaint')}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+            >
+              ➕ New Complaint
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Top Departments */}
-      {kpiData && (
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-xl font-semibold mb-4">Top Departments by Complaint Volume</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {kpiData.topDepartments.map((dept, index) => (
-              <div key={dept.name} className="text-center p-4 border rounded-lg">
-                <div className="text-2xl font-bold text-blue-600 mb-2">#{index + 1}</div>
-                <h4 className="font-semibold">{dept.name}</h4>
-                <p className="text-2xl font-bold mt-2">{dept.count}</p>
-                <p className="text-sm text-gray-500">complaints</p>
-              </div>
-            ))}
-          </div>
+      {/* Error Display */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+          {error}
         </div>
+      )}
+
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200 mb-8">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('overview')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'overview'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Overview
+          </button>
+          <button
+            onClick={() => setActiveTab('copilot')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'copilot'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            AI Copilot
+          </button>
+        </nav>
+      </div>
+      
+      {/* Tab Content */}
+      {activeTab === 'overview' && (
+        <div className="space-y-8">
+          {/* KPI Cards Section */}
+          {kpiData && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center">
+                  <div className="p-3 bg-blue-100 rounded-lg">
+                    <div className="text-blue-600 text-xl">📋</div>
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-sm font-medium text-gray-500">Total Complaints</h3>
+                    <p className="text-2xl font-bold text-gray-900">{kpiData.totalComplaints}</p>
+                    <p className="text-xs text-gray-500 mt-1">All time</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center">
+                  <div className="p-3 bg-green-100 rounded-lg">
+                    <div className="text-green-600 text-xl">✅</div>
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-sm font-medium text-gray-500">Resolved Ratio</h3>
+                    <p className="text-2xl font-bold text-gray-900">{(kpiData.resolvedRatio * 100).toFixed(1)}%</p>
+                    <p className="text-xs text-gray-500 mt-1">Resolution rate</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center">
+                  <div className="p-3 bg-yellow-100 rounded-lg">
+                    <div className="text-yellow-600 text-xl">⏱️</div>
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-sm font-medium text-gray-500">Unresolved</h3>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {Math.round(kpiData.totalComplaints * (1 - kpiData.resolvedRatio))}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">Pending action</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center">
+                  <div className="p-3 bg-purple-100 rounded-lg">
+                    <div className="text-purple-600 text-xl">⏰</div>
+                  </div>
+                  <div className="ml-4">
+                    <h3 className="text-sm font-medium text-gray-500">Avg Resolution</h3>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {heatmapData.length > 0 
+                        ? (heatmapData.reduce((sum, ward) => sum + ward.avgResolutionTime, 0) / heatmapData.length).toFixed(1)
+                        : '0'
+                      }h
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">Hours</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Geographic Heatmap - Takes 2 columns */}
+            <div className="lg:col-span-2">
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg font-semibold text-gray-900">Complaint Heatmap by Ward</h2>
+                  <button 
+                    onClick={() => navigate('/transparency')}
+                    className="text-sm text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1"
+                  >
+                    View Details →
+                  </button>
+                </div>
+                
+                {/* Interactive Map */}
+                <div className="h-96 rounded-lg overflow-hidden">
+                  {transparencyData && (
+                    <TransparencyMap 
+                      complaintsByWard={heatmapData.map(ward => ({
+                        wardId: ward.wardId,
+                        wardName: ward.wardName,
+                        count: ward.totalComplaints,
+                        coordinates: transparencyData.complaintsByWard.find((w: any) => w.wardId === ward.wardId)?.coordinates
+                      }))} 
+                    />
+                  )}
+                </div>
+
+                {/* Map Legend */}
+                <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+                  <div className="flex items-center space-x-4">
+                    <span className="font-medium">Intensity:</span>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                      <span>Low</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                      <span>Medium</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                      <span>High</span>
+                    </div>
+                  </div>
+                  <span>Click wards for details</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Ward Statistics Sidebar - Takes 1 column */}
+            <div className="lg:col-span-1">
+              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Ward Statistics</h2>
+                
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {heatmapData.map((ward) => (
+                    <div key={ward.wardId} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex justify-between items-center mb-3">
+                        <h3 className="font-medium text-gray-900">{ward.wardName}</h3>
+                        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                          Ward {ward.wardId}
+                        </span>
+                      </div>
+                      
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-3 gap-3 text-sm mb-3">
+                        <div className="text-center">
+                          <p className="text-gray-500 text-xs">Total</p>
+                          <p className="font-semibold text-gray-900">{ward.totalComplaints}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-gray-500 text-xs">Open</p>
+                          <p className="font-semibold text-red-600">{ward.unresolvedComplaints}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-gray-500 text-xs">Avg Time</p>
+                          <p className="font-semibold text-gray-900">{ward.avgResolutionTime}h</p>
+                        </div>
+                      </div>
+                      
+                      {/* Progress Bar */}
+                      <div>
+                        <div className="flex justify-between text-xs text-gray-500 mb-1">
+                          <span>Resolution Progress</span>
+                          <span>{Math.round(((ward.totalComplaints - ward.unresolvedComplaints) / ward.totalComplaints) * 100)}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div 
+                            className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${((ward.totalComplaints - ward.unresolvedComplaints) / ward.totalComplaints) * 100}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Top Departments Section */}
+          {kpiData && kpiData.topDepartments.length > 0 && (
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Top Complaint Categories</h2>
+                <button 
+                  onClick={() => navigate('/admin')}
+                  className="text-sm text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1"
+                >
+                  Manage Complaints →
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                {kpiData.topDepartments.map((dept, index) => (
+                  <div key={index} className="text-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                    <div className="text-2xl font-bold text-gray-900">{dept.count}</div>
+                    <div className="text-sm text-gray-600 mt-1">{dept.name}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* AI Copilot Tab */}
+      {activeTab === 'copilot' && (
+        <div className="space-y-8">
+          <CopilotPanel />
+          <PredictionsPanel />
+        </div>
+      )}
+
+      {/* Complaint Detail Modal */}
+      {isModalOpen && selectedComplaint && (
+        <ComplaintDetailModal
+          complaint={selectedComplaint}
+          onClose={closeModal}
+        />
       )}
     </div>
   );

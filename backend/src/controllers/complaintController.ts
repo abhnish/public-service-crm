@@ -2,18 +2,76 @@ import { Request, Response } from 'express';
 import { AIService } from '../services/aiService';
 import { computePriorityScore } from '../utils/priorityScore';
 import { notifyUser, notifyAdmins } from '../services/notificationService';
+import { getSocketService } from '../services/socketService';
 import logger from '../utils/logger';
+import fs from 'fs';
+import path from 'path';
 
-// Temporary in-memory storage for complaints (replace with Prisma when ready)
-const complaints: any[] = [];
+// Persistent in-memory storage with file backup
+const DATA_FILE = path.join(__dirname, '../../data/complaints.json');
+const USERS_FILE = path.join(__dirname, '../../data/users.json');
+
+// Ensure data directory exists
+const dataDir = path.dirname(DATA_FILE);
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
+
+// Save functions
+const saveComplaints = () => {
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify({
+      complaints,
+      nextId: complaintIdCounter
+    }, null, 2));
+  } catch (error) {
+    console.error('Error saving complaints:', error);
+  }
+};
+
+const saveUsers = () => {
+  try {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+  } catch (error) {
+    console.error('Error saving users:', error);
+  }
+};
+
+// Load or initialize complaints
+let complaints: any[] = [];
 let complaintIdCounter = 1;
+try {
+  if (fs.existsSync(DATA_FILE)) {
+    const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+    complaints = data.complaints || [];
+    complaintIdCounter = data.nextId || 1;
+  }
+} catch (error) {
+  console.log('Starting with fresh complaints array');
+}
 
-// Temporary in-memory storage for users (from auth system)
-const users: any[] = [
-  { id: 1, fullName: 'Test User', email: 'test@example.com', role: 'citizen' },
-  { id: 2, fullName: 'Admin User', email: 'admin@example.com', role: 'admin' },
-  { id: 3, fullName: 'Officer User', email: 'officer@example.com', role: 'officer' }
-];
+// Load or initialize users
+let users: any[] = [];
+try {
+  if (fs.existsSync(USERS_FILE)) {
+    users = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8'));
+  } else {
+    // Default users
+    users = [
+      { id: 1, fullName: 'Test User', email: 'test@example.com', role: 'citizen', phone: '1234567890' },
+      { id: 2, fullName: 'Admin User', email: 'admin@civiccrm.gov', role: 'admin', phone: '1111111111' },
+      { id: 3, fullName: 'Officer User', email: 'officer@civiccrm.gov', role: 'officer', phone: '2222222222' }
+    ];
+    saveUsers();
+  }
+} catch (error) {
+  console.log('Starting with default users');
+  users = [
+    { id: 1, fullName: 'Test User', email: 'test@example.com', role: 'citizen', phone: '1234567890' },
+    { id: 2, fullName: 'Admin User', email: 'admin@civiccrm.gov', role: 'admin', phone: '1111111111' },
+    { id: 3, fullName: 'Officer User', email: 'officer@civiccrm.gov', role: 'officer', phone: '2222222222' }
+  ];
+}
 
 export const createComplaint = async (req: any, res: Response) => {
   try {
@@ -57,6 +115,15 @@ export const createComplaint = async (req: any, res: Response) => {
     };
 
     complaints.push(complaint);
+    saveComplaints(); // Save to file
+
+    // Emit real-time event
+    try {
+      const socketService = getSocketService();
+      socketService.emitComplaintCreated(complaint);
+    } catch (socketError) {
+      logger.error('Socket emit error:', socketError);
+    }
 
     res.status(201).json({
       message: 'Complaint created successfully.',
@@ -215,8 +282,17 @@ export const updateComplaint = async (req: any, res: Response) => {
       }
       
       const oldOfficerId = complaint.assignedOfficer;
+      const oldStatus = complaint.status;
       complaint.assignedOfficer = assignedOfficer;
       complaint.assignedAt = new Date();
+
+      // Emit real-time assignment event
+      try {
+        const socketService = getSocketService();
+        socketService.emitComplaintAssigned(complaint, assignedOfficer);
+      } catch (socketError) {
+        logger.error('Socket emit error:', socketError);
+      }
 
       // Simulate atomic increment of officer workload
       // In real implementation, this would be a database transaction
@@ -252,7 +328,28 @@ export const updateComplaint = async (req: any, res: Response) => {
       }
     }
 
+    if (status) {
+      const oldStatus = complaint.status;
+      complaint.status = status;
+      if (status === 'resolved') {
+        complaint.resolvedAt = new Date();
+      }
+
+      // Emit real-time status update event
+      try {
+        const socketService = getSocketService();
+        socketService.emitComplaintStatusUpdated(complaint, oldStatus, status);
+        
+        if (status === 'resolved') {
+          socketService.emitComplaintResolved(complaint);
+        }
+      } catch (socketError) {
+        logger.error('Socket emit error:', socketError);
+      }
+    }
+
     complaints[complaintIndex] = complaint;
+    saveComplaints(); // Save to file
 
     // Notify user about resolution
     if (status === 'resolved' && complaint.citizenId) {
@@ -294,10 +391,9 @@ export const deleteComplaint = async (req: any, res: Response) => {
     }
 
     complaints.splice(complaintIndex, 1);
+    saveComplaints(); // Save to file
 
-    console.log('SLA job processed successfully');
-    logger.info('SLA job processed successfully');
-    logger.info('SLA job completed successfully');
+    logger.info('Complaint deleted successfully');
     logger.info('Complaint deleted successfully');
 
     res.json({ message: 'Complaint deleted successfully.' });

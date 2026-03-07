@@ -170,34 +170,63 @@ export const complaintsAPI = {
 
 // Utility API (for wards and departments)
 export const utilityAPI = {
-  // Note: This would be implemented when we have the actual endpoints
   getWards: (): Promise<AxiosResponse<Ward[]>> => 
-    // Mock data for now - return proper AxiosResponse structure
-    Promise.resolve({
-      status: 200,
-      statusText: 'OK',
-      headers: {},
-      config: {} as any,
-      data: [
-        { id: 1, name: 'Ward 1', geojson: {} },
-        { id: 2, name: 'Ward 2', geojson: {} },
-        { id: 3, name: 'Ward 3', geojson: {} },
-      ]
-    }),
+    api.get('/wards'),
 
   getDepartments: (): Promise<AxiosResponse<Department[]>> => 
-    // Mock data for now - return proper AxiosResponse structure
-    Promise.resolve({
-      status: 200,
-      statusText: 'OK',
-      headers: {},
-      config: {} as any,
-      data: [
-        { id: 1, name: 'Water', slaHours: 24 },
-        { id: 2, name: 'Roads', slaHours: 48 },
-        { id: 3, name: 'Sanitation', slaHours: 12 },
-      ]
-    }),
+    api.get('/departments'),
+};
+
+// Copilot API (for admin AI assistant)
+export const copilotAPI = {
+  analyze: (data: {
+    question: string;
+    scope?: {
+      wardId?: number;
+      departmentId?: number;
+      dateFrom?: string;
+      dateTo?: string;
+    };
+  }): Promise<AxiosResponse<{
+    analysis: string;
+    recommendations: string[];
+    citations: string[];
+    source: 'llm' | 'fallback';
+    llmEnabled: boolean;
+    dataContext: {
+      totalComplaints: number;
+      analysisScope: string;
+    };
+  }>> => 
+    api.post('/admin/copilot', data),
+};
+
+// Predictions API (for complaint forecasting)
+export const predictionsAPI = {
+  getPredictions: (params?: {
+    days?: number;
+    groupBy?: 'ward' | 'department';
+  }): Promise<AxiosResponse<{
+    predictions: Array<{
+      wardId?: number;
+      wardName?: string;
+      departmentId?: number;
+      departmentName?: string;
+      predictedComplaints: number;
+      confidence: number;
+      risk: 'low' | 'medium' | 'high';
+      historicalAverage: number;
+      trend: number;
+    }>;
+    metadata: {
+      periodDays: number;
+      groupBy: string;
+      totalComplaints: number;
+      generatedAt: string;
+      algorithm: string;
+    };
+  }>> => 
+    api.get('/admin/predictions', { params }),
 };
 
 export default api;

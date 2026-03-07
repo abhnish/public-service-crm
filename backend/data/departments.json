@@ -1,0 +1,38 @@
+[
+  {
+    "id": 1,
+    "name": "Water Supply",
+    "description": "Water supply and sanitation issues",
+    "slaHours": 24
+  },
+  {
+    "id": 2,
+    "name": "Road Damage",
+    "description": "Road maintenance and infrastructure",
+    "slaHours": 48
+  },
+  {
+    "id": 3,
+    "name": "Sanitation",
+    "description": "Waste management and cleanliness",
+    "slaHours": 12
+  },
+  {
+    "id": 4,
+    "name": "Electricity",
+    "description": "Power supply and electrical issues",
+    "slaHours": 8
+  },
+  {
+    "id": 5,
+    "name": "Street Lighting",
+    "description": "Street light maintenance",
+    "slaHours": 16
+  },
+  {
+    "id": 6,
+    "name": "Drainage",
+    "description": "Drainage and flood control",
+    "slaHours": 24
+  }
+]
