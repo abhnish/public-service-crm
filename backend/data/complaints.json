@@ -18,7 +18,26 @@
       "createdAt": "2026-03-07T04:46:02.022Z",
       "assignedAt": null,
       "resolvedAt": null
+    },
+    {
+      "id": 2,
+      "citizenId": 5,
+      "wardId": 2,
+      "departmentId": 3,
+      "description": "too much dirt",
+      "location": "Rohini sector 22",
+      "latitude": null,
+      "longitude": null,
+      "category": "General",
+      "sentiment": "neutral",
+      "priorityScore": 0.3,
+      "status": "submitted",
+      "assignedOfficer": null,
+      "attachments": null,
+      "createdAt": "2026-03-07T05:36:27.478Z",
+      "assignedAt": null,
+      "resolvedAt": null
     }
   ],
-  "nextId": 2
+  "nextId": 3
 }
