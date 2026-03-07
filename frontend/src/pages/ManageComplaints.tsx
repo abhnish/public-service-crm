@@ -295,7 +295,7 @@ const ManageComplaints = () => {
  {activeTab !== 'solved' && (
  <button
  onClick={() => openAssignModal(complaint)}
- className="inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 text-slate-50 font-medium px-3 py-1.5 rounded-lg transition-colors shadow-sm text-sm"
+ className="inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 !text-white font-medium px-3 py-1.5 rounded-lg transition-colors shadow-sm text-sm"
  >
  <svg className="w-4 h-4"fill="none"viewBox="0 0 24 24"stroke="currentColor">
  <path strokeLinecap="round"strokeLinejoin="round"strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
@@ -378,7 +378,7 @@ const ManageComplaints = () => {
  disabled={isAssigning || isAssigned}
  className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
  isAssigned ? 'bg-slate-800 text-slate-400 cursor-not-allowed border border-slate-800'
- : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-slate-50 shadow-sm'
+ : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 !text-white shadow-sm'
  }`}
  >
  {isAssigning && <span className="w-3.5 h-3.5 border-2 border-inherit border-t-transparent rounded-full animate-spin"></span>}

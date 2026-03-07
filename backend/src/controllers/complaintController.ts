@@ -322,9 +322,13 @@ export const updateComplaint = async (req: any, res: Response) => {
         // });
 
         // Notify user about complaint assignment
-        await notifyUser(complaint.citizenId, 'complaint_assigned', 
-          `Your complaint #${complaint.id} has been assigned to an officer and is being processed.`
-        );
+        try {
+          await notifyUser(complaint.citizenId, 'complaint_assigned', 
+            `Your complaint #${complaint.id} has been assigned to an officer and is being processed.`
+          );
+        } catch (error) {
+          logger.error('Failed to notify user about assignment:', error);
+        }
       }
     }
 
@@ -353,14 +357,22 @@ export const updateComplaint = async (req: any, res: Response) => {
 
     // Notify user about resolution
     if (status === 'resolved' && complaint.citizenId) {
-      await notifyUser(complaint.citizenId, 'complaint_resolved', 
-        `Your complaint #${complaint.id} has been resolved. Thank you for using our service!`
-      );
+      try {
+        await notifyUser(complaint.citizenId, 'complaint_resolved', 
+          `Your complaint #${complaint.id} has been resolved. Thank you for using our service!`
+        );
+      } catch (error) {
+        logger.error('Failed to notify user about resolution:', error);
+      }
     }
 
     // Notify admins about resolution
     if (status === 'resolved') {
-      await notifyAdmins(`Complaint #${complaint.id} has been resolved by ${req.user?.fullName || 'An officer'}`);
+      try {
+        await notifyAdmins(`Complaint #${complaint.id} has been resolved by ${req.user?.fullName || 'An officer'}`);
+      } catch (error) {
+        logger.error('Failed to notify admins about resolution:', error);
+      }
     }
 
     res.json({
