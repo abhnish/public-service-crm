@@ -111,5 +111,32 @@
     "password": "$2a$10$I68rLowh7ZlC6xYhPrjqT.pQ.ZIUE3C5oHOKXgbbN9MI1loRfhvoO",
     "role": "admin",
     "createdAt": "2026-03-07T07:33:22.084Z"
+  },
+  {
+    "id": 14,
+    "fullName": "Test Citizen",
+    "email": "citizen@test.com",
+    "phone": "+1234567890",
+    "password": "$2a$10$1PBTu2VL8XAzAKSK2p6xyeL0pcB.HRu2Xsc2DPbvX.9YBxenUZahG",
+    "role": "citizen",
+    "createdAt": "2026-03-07T09:23:24.119Z"
+  },
+  {
+    "id": 15,
+    "fullName": "Test Admin",
+    "email": "admin@test.com",
+    "phone": "+1234567891",
+    "password": "$2a$10$mXMdjumccj4qkgsUCAAzd.tR2w8tw2VdFjaW57TH3JC9xPevG/dta",
+    "role": "admin",
+    "createdAt": "2026-03-07T09:23:24.186Z"
+  },
+  {
+    "id": 16,
+    "fullName": "Test Officer",
+    "email": "officer@test.com",
+    "phone": "+1234567892",
+    "password": "$2a$10$wIEcy8plVPhbbpy6sQymu.ZGEPm4sfdVDbsv7yPlco6viiSPS4g0y",
+    "role": "officer",
+    "createdAt": "2026-03-07T09:23:24.254Z"
   }
 ]
