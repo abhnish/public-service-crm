@@ -29,7 +29,8 @@ class SocketClientService {
       }
 
       // Create new socket connection
-      this.socket = io(process.env.REACT_APP_SOCKET_URL || 'http://localhost:5001', {
+      const socketUrl = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5001';
+      this.socket = io(socketUrl, {
         auth: { token },
         transports: ['websocket', 'polling'],
         timeout: 10000,
