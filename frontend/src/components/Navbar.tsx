@@ -12,7 +12,7 @@ const Navbar = () => {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="text-xl font-bold text-slate-50 tracking-tight flex items-center gap-2">
-              <span className="w-6 h-6 rounded bg-cyan-500 shadow-[0_0_10px_rgba(34,211,238,0.5)]"></span>
+              <img src="/logo.png" alt="Smart CRM Logo" className="h-10 w-auto object-contain" />
               Smart <span className="text-cyan-400">CRM</span>
             </Link>
           </div>
